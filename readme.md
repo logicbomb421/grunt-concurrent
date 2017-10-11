@@ -83,6 +83,13 @@ grunt.registerTask('default', ['concurrent:target']);
 
 *The output will be messy when combining certain tasks. This option is best used with tasks that don't exit like `watch` and `nodemon` to monitor the output of long-running concurrent tasks.*
 
+### delay
+
+Type: `number`<br>
+Default: `0`
+
+Specify the delay (in milliseconds) between each task. The first task will always run immediately.
+
 
 ## License
 

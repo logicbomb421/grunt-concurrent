@@ -15,6 +15,7 @@ module.exports = function (grunt) {
 		});
 		var tasks = this.data.tasks || this.data;
 		var flags = grunt.option.flags();
+		const delay = opts.delay || 0;
 
 		if (flags.indexOf('--no-color') === -1 &&
 			flags.indexOf('--no-colors') === -1 &&
@@ -33,27 +34,29 @@ module.exports = function (grunt) {
 			);
 		}
 
-		async.eachLimit(tasks, opts.limit, function (task, next) {
-			var cp = grunt.util.spawn({
-				grunt: true,
-				args: arrify(task).concat(flags),
-				opts: {
-					stdio: ['ignore', 'pipe', 'pipe']
+		async.eachOfLimit(tasks, opts.limit, function (task, index, next) {
+			setTimeout(function () {
+				var cp = grunt.util.spawn({
+					grunt: true,
+					args: arrify(task).concat(flags),
+					opts: {
+						stdio: ['ignore', 'pipe', 'pipe']
+					}
+				}, function (err, result) {
+					if (!opts.logConcurrentOutput) {
+						grunt.log.writeln('\n' + indentString(result.stdout + result.stderr, ' ', 4));
+					}
+	
+					next(err);
+				});
+	
+				if (opts.logConcurrentOutput) {
+					cp.stdout.pipe(padStream(' ', 4)).pipe(process.stdout);
+					cp.stderr.pipe(padStream(' ', 4)).pipe(process.stderr);
 				}
-			}, function (err, result) {
-				if (!opts.logConcurrentOutput) {
-					grunt.log.writeln('\n' + indentString(result.stdout + result.stderr, ' ', 4));
-				}
-
-				next(err);
-			});
-
-			if (opts.logConcurrentOutput) {
-				cp.stdout.pipe(padStream(' ', 4)).pipe(process.stdout);
-				cp.stderr.pipe(padStream(' ', 4)).pipe(process.stderr);
-			}
-
-			cpCache.push(cp);
+	
+				cpCache.push(cp);
+			}, index == 0 ? 0 : delay);
 		}, function (err) {
 			if (err) {
 				grunt.warn(err);
